@@ -1,3 +1,4 @@
+'use strict';
 let mongoose = require('mongoose');
 let http = require('http');
 let request = require('request');
@@ -12,14 +13,13 @@ db.once('open', function() {
 });
 let Content = require('../models/Content');
 let Article = require('../models/gzh.js');
-Article.find({content_url:/./},function (err, results) {
+Article.find({},function (err, results) {
     if (err){
         console.log("Wrong \n");
     }
     for (let x in results){
         let digest = results[x].digest.replace(/ /g,'');
         let cover = results[x].cover.replace(/(\\\/)/g,'/');
-
         getContent(digest,cover,results[x].content_url.toString().replace("\\/\\/","//").replace("\\/","/"));
     }
 });
@@ -34,22 +34,26 @@ function getContent(digest,cover,link) {
         }).on('end', function () {
             let $ = cheerio.load(html);
             let str = "";
-            let length = $('#js_content').children().length;
+            let length = $('#js_content').children().length + $('#js_content blockquote').children().length;
             let time = $('#post-date').text();
             let title = $('#activity-name').text().replace(/ /g,'');
-
-            coverImg = cover.replace('https', 'http');
-            let coverPosition = '../upload/cover/'+md5(title);
-            request(coverImg)
-                .pipe(fs.createWriteStream(coverPosition));
-            cover = coverPosition;
-            console.log(cover);
-            //封面图.
 
             //输入新文章
             Content.findOne({
                 title:title,
             }).then(function (content) {
+                if (content){
+                    console.log('已经存在这篇文章了！');
+                    return;
+                }
+                console.log(length);
+                let coverImg = cover.replace('https', 'http');
+                let coverPosition = '../upload/cover/'+md5(title);
+                request(coverImg)
+                    .pipe(fs.createWriteStream(coverPosition));
+                cover = coverPosition;
+                console.log(cover);
+
                 let img;
                 for (let i = 0;i < length; ++i) {
                     if ($('#js_content p').eq(i).children('img').attr('data-src')) {
@@ -63,11 +67,8 @@ function getContent(digest,cover,link) {
                         str += imgStr + '\n';
                     } else {
                         str += "<p>" + $('#js_content p').eq(i).text() + "</p>";
+                        console.log(str);
                     }
-                }
-                if (content){
-                    console.log('已经存在这篇文章了！');
-                    return;
                 }
                 let c = new Content({
                     title: title,
@@ -80,6 +81,8 @@ function getContent(digest,cover,link) {
             }).catch(function (err) {
                 if(err){
                     console.log(err);
+                }else{
+                    console.log('保存成功');
                 }
             });
         });
