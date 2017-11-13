@@ -146,14 +146,23 @@ module.exports = {
         //可能会302到/mp/profile_ext?action=home
           if(serverResData.toString() !== ""){
               try {//防止报错退出程序
+                  console.log("是这一个吗？");
                   getToMongodb(serverResData);
-                  callback(serverResData);
+                  callback(serverResData);//将返回的代码插入到历史消息页面中，并返回显示出来
+                  // HttpPost(ret[1],req.url,"getMsgJson.php");//这个函数是后文定义的，将匹配到的历史消息json发送到自己的服务器
+                  // var http = require('http');
+                  // http.get('http://xxx.com/getWxHis.php', function(res) {//这个地址是自己服务器上的一个程序，目的是为了获取到下一个链接地址，将地址放在一个js脚本中，将页面自动跳转到下一页。后文将介绍getWxHis.php的原理。
+                  //     res.on('data', function(chunk){
+                  //     callback(chunk+serverResData);//将返回的代码插入到历史消息页面中，并返回显示出来
+                  //     })
+                  // });
               }catch(e){//如果上面的正则没有匹配到，那么这个页面内容可能是公众号历史消息页面向下翻动的第二页，因为历史消息第一页是html格式的，第二页就是json格式的。
                    try {
                       var json = JSON.parse(serverResData.toString());
                       var json = JSON.parse(ret[1]);
 
                       if (json.general_msg_list != []) {
+                      // HttpPost(json.general_msg_list,req.url,"getMsgJson.php");//这个函数和上面的一样是后文定义的，将第二页历史消息的json发送到自己的服务器
                       }
                    }catch(e){
                      console.log(e);//错误捕捉
@@ -188,7 +197,14 @@ module.exports = {
                           is_multi:ret[1].list[i].app_msg_ext_info.is_multi,
                           author:ret[1].list[i].app_msg_ext_info.author
                       });
-                      return article.save();
+                      article.save();
+                      let request = require('request');
+                      request({url:'服务器上crawl.js的地址',timeout:10000}, function (error, response){
+                          if (!error && response.statusCode == 200) {
+                              console.log('successs!');
+                          }
+                      })
+                      return;
                   }).catch(function (err) {
                       console.log(err);
                   })
@@ -203,6 +219,7 @@ module.exports = {
           try {
               getToMongodb(serverResData);
               if (json.general_msg_list != []) {
+                  // HttpPost(json.general_msg_list,req.url,"getMsgJson.php");//这个函数和上面的一样是后文定义的，将第二页历史消息的json发送到自己的服务器
               }
           }catch(e){
               console.log(e);
@@ -211,12 +228,19 @@ module.exports = {
       }else if(/mp\/getappmsgext/i.test(req.url)){//当链接地址为公众号文章阅读量和点赞量时
           try {
               getToMongodb(serverResData);
+              // HttpPost(serverResData,req.url,"getMsgExt.php");//函数是后文定义的，功能是将文章阅读量点赞量的json发送到服务器
           }catch(e){
 
           }
           callback(serverResData);
       }else if(/s\?__biz/i.test(req.url) || /mp\/rumor/i.test(req.url)){//当链接地址为公众号文章时（rumor这个地址是公众号文章被辟谣了）
           try {
+              var http = require('http');
+              // http.get('http://xxx.com/getWxPost.php', function(res) {//这个地址是自己服务器上的另一个程序，目的是为了获取到下一个链接地址，将地址放在一个js脚本中，将页面自动跳转到下一页。后文将介绍getWxPost.php的原理。
+              //     res.on('data', function(chunk){
+              //         callback(chunk+serverResData);
+              //     })
+              // });
           }catch(e){
               callback(serverResData);
           }
@@ -278,6 +302,35 @@ module.exports = {
         ];
     }
 };
+// function HttpPost(str,url,path) {//将json发送到服务器，str为json内容，url为历史消息页面地址，path是接收程序的路径和文件名
+//     var http = require('http');
+//     var data = {
+//         str: encodeURIComponent(str),
+//         url: encodeURIComponent(url)
+//     };
+//     content = require('querystring').stringify(data);
+//     var options = {
+//         method: "POST",
+//         host: "www.xxx.com",//注意没有http://，这是服务器的域名。
+//         port: 80,
+//         path: path,//接收程序的路径和文件名
+//         headers: {
+//             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+//             "Content-Length": content.length
+//         }
+//     };
+//     var req = http.request(options, function (res) {
+//         res.setEncoding('utf8');
+//         res.on('data', function (chunk) {
+//             console.log('BODY: ' + chunk);
+//         });
+//     });
+//     req.on('error', function (e) {
+//         console.log('problem with request: ' + e.message);
+//     });
+//     req.write(content);
+//     req.end();
+// }
 function getToMongodb(serverResData) {
     let json = JSON.parse(serverResData.toString());
     let json_2 = JSON.parse(json.general_msg_list);
@@ -302,7 +355,14 @@ function getToMongodb(serverResData) {
                 is_multi:json_2.list[i].app_msg_ext_info.is_multi,
                 author:json_2.list[i].app_msg_ext_info.author
             });
-            return article.save();
+            article.save();
+            let request = require('request');
+            request({url:'服务器上crawl.js的地址',timeout:10000}, function (error, response){
+                if (!error && response.statusCode == 200) {
+                    console.log('successs!');
+                }
+            })
+            return;
         }).catch(function (err) {
             console.log(err);
         })
