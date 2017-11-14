@@ -302,35 +302,6 @@ module.exports = {
         ];
     }
 };
-// function HttpPost(str,url,path) {//将json发送到服务器，str为json内容，url为历史消息页面地址，path是接收程序的路径和文件名
-//     var http = require('http');
-//     var data = {
-//         str: encodeURIComponent(str),
-//         url: encodeURIComponent(url)
-//     };
-//     content = require('querystring').stringify(data);
-//     var options = {
-//         method: "POST",
-//         host: "www.xxx.com",//注意没有http://，这是服务器的域名。
-//         port: 80,
-//         path: path,//接收程序的路径和文件名
-//         headers: {
-//             'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-//             "Content-Length": content.length
-//         }
-//     };
-//     var req = http.request(options, function (res) {
-//         res.setEncoding('utf8');
-//         res.on('data', function (chunk) {
-//             console.log('BODY: ' + chunk);
-//         });
-//     });
-//     req.on('error', function (e) {
-//         console.log('problem with request: ' + e.message);
-//     });
-//     req.write(content);
-//     req.end();
-// }
 function getToMongodb(serverResData) {
     let json = JSON.parse(serverResData.toString());
     let json_2 = JSON.parse(json.general_msg_list);
